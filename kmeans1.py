@@ -8,27 +8,52 @@ import random as ra
 import time  
 
 a = time.clock()
-#classification FUNCTION
-def clasify(K, N, dim, obs, sampl):    
-	clus = np.zeros((K, 1))  # [[0 for x in xrange(1)] for y in xrange(K)]
-	bin  = np.zeros((N, K))
 
 #distance matrix 
+def distance_matrix(K, N, dim, obs, sampl, method):
+	
 	dist = np.zeros((K, N), dtype=np.complex128)
+	
+	if method == "eucl":
+		for i in range(0, N): 
 		
-	for i in range(0, N): 
-    
-		for j in range(0, K): 
-		
-		  zero = np.complex128(0)
-		  
-		  for h in range(0, dim): 
+			for j in range(0, K): 
 			
-			zero += (obs[j, h] - sampl[i, h])**2  
-		  
-		  dist[j,i] = ma.sqrt(zero)
-		  
+			  zero = np.complex128(0)
+			  
+			  for h in range(0, dim): 
+				
+				zero += (obs[j, h] - sampl[i, h])**2  
+			  
+			  dist[j,i] = ma.sqrt(zero)
+			  
+	if method == "city":
+		for i in range(0, N): 
 		
+			for j in range(0, K): 
+			
+			  zero = np.complex128(0)
+			  
+			  for h in range(0, dim): 
+				
+				zero += abs(obs[j, h] - sampl[i, h])  
+			  
+			  dist[j,i] = ma.sqrt(zero)
+	
+	
+	
+	
+	
+	return dist 
+		  
+#classification FUNCTION
+def clasify(K, N, dim, obs, sampl, method):
+
+	clus = np.zeros((K, 1))  # [[0 for x in xrange(1)] for y in xrange(K)]
+	bin  = np.zeros((N, K))
+	
+#distance matrix 
+	dist = distance_matrix(K, N, dim, obs, sampl, method)
 		  
 # classification
 	for i in range(0, K):
@@ -63,48 +88,56 @@ def midds(N, dim, K, clus, obs):
 	return midds
 
 #########################################################################################
-#obs matrix,  
-dim  = 4
-N    = 3        #
-K = 6
-obs = np.matrix('-7,-7,-9,-10 ;  -7.3,-7.3,-9.4,-10.1 ;  -10,-10,-10,-3 ;  7,7,7,8 ;  10,13,13,10 ; 13,13,10,10')
-# pick random N points 
-sampl = obs[ra.sample(range(0,K),N),]
-#sampl = np.matrix('-7,-7,-9,-10 ; 13,13,10,10')
+def kmeans(obs,N,method):
 
-# Classification for chosen points
-clus = clasify(K, N, dim, obs, sampl)
-centroids = midds(N, dim, K, clus, obs)
+	dim = obs.shape[1]
+	K = obs.shape[0]
+	# pick random N points 
+	sampl = obs[ra.sample(range(0,K),N),]
 
-# calculate new midds
-clus2 = clasify(K, N, dim, obs, centroids)
-p = 0
-vec = np.zeros((K,1))
-
-for i in range(0,K):
-	vec[i,0] = clus[i,0] - clus2[i,0]
-	if vec[i,0] != 0:
-		p = 1
-		break
-
-r = 0
-
-while p:
-	r+=1
-	clus = clus2
+	# Classification for chosen points
+	clus = clasify(K, N, dim, obs, sampl,method)
 	centroids = midds(N, dim, K, clus, obs)
-	clus2 = clasify(K, N, dim, obs, centroids)
+
+	# calculate new midds
+	clus2 = clasify(K, N, dim, obs, centroids, method)
 	p = 0
+	vec = np.zeros((K,1))
+
 	for i in range(0,K):
-		
-		if clus[i,0] - clus2[i,0] != 0:
+		vec[i,0] = clus[i,0] - clus2[i,0]
+		if vec[i,0] != 0:
 			p = 1
 			break
 
+	r = 0
+
+	while p:
+		r+=1
+		clus = clus2
+		centroids = midds(N, dim, K, clus, obs)
+		clus2 = clasify(K, N, dim, obs, centroids,method)
+		p = 0
+		for i in range(0,K):
 			
-b = time.clock()
-print clus2
-print "Secs: ", b-a
+			if clus[i,0] - clus2[i,0] != 0:
+				p = 1
+				break
+
+				
+	b = time.clock()
+	print clus2
+	print "Secs: ", b-a
+
+
+#########################################################################################
+#obs matrix,  
+N      = 3        #
+obs    = np.matrix('-7,-7,-9,-10 ;  -7.3,-7.3,-9.4,-10.1 ;  -10,-10,-10,-3 ;  7,7,7,8 ;  10,13,13,10 ; 13,13,10,10')
+method = "eucl"
+
+kmeans(obs,N,method)
+#print method
 	
 
 
